@@ -16,6 +16,7 @@ import (
 	"math/rand"
 	"log"
 	"time"
+	"github.com/rs/cors"
 )
 
 var ctx = context.Background()
@@ -298,7 +299,16 @@ func handleRequests() {
 	url_router := mux.NewRouter().StrictSlash(true)
 	url_router.HandleFunc("/proxy/v1/shorten-url", ShortenURL).Methods("POST")
 	url_router.HandleFunc("/{shortURL}", RedirectURL).Methods("GET")
-	http.ListenAndServe(":8080", url_router)
+	// allow cors
+	c := cors.New(cors.Options{
+        AllowedOrigins:   []string{"*"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"Content-Type", "Authorization"},
+        AllowCredentials: true,
+    })
+	handler := c.Handler(url_router)
+
+	http.ListenAndServe(":8080", handler)
 }
 
 func main() {
