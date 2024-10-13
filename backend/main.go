@@ -17,6 +17,7 @@ import (
 	"log"
 	"time"
 	"github.com/rs/cors"
+	"os"
 )
 
 var ctx = context.Background()
@@ -32,11 +33,12 @@ type URL struct {
 	ID string `json:"id"`
 	ShortURL string `json:"short_url"`
 	LongURL string `json:"long_url"`
-	UserID string `json:"user_id"`
+	UserId string `json:"user_id"`
 }
 
 type PostURL struct {
 	LongURL string `json:"long_url"`
+	UserId string `json:"user_id"`
 }
 
 // Helper Functions
@@ -110,7 +112,6 @@ func UpdateCacheExpiry(key string) error {
 	return nil
 }
 
-
 // get secret from secrets manager 
 func GetSecret(secretName string) (string, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
@@ -146,6 +147,40 @@ func generateShortURL() (string, error) {
 	return string(shortURL), nil
 }
 
+func IsLoggedIn(JwtToken string) bool {
+	// check if the token is valid
+	requestUrl := os.Getenv("AUTH_SERVICE_URL") + "/proxy/v1/auth/verify"
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", requestUrl, nil)
+	req.Header.Set("Authorization", JwtToken)
+	res, err:= client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+		return false
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return false
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+		return false
+	}
+
+	var response map[string]interface{}
+	json.Unmarshal(bodyBytes, &response)
+
+	if response["message"] == "Token is valid" {
+		return true
+	}
+
+	return false
+}
+
 // Route Functions
 
 func ShortenURL(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +200,13 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer db.Close()
+
+	// check if the user is logged in
+	JwtToken := r.Header.Get("Authorization")
+	if !IsLoggedIn(JwtToken) {
+		http.Error(w, "User is not logged in", http.StatusUnauthorized)
+		return
+	}
 
 	shortUrlCode, err := generateShortURL()
 	if err != nil {
@@ -217,7 +259,7 @@ func ShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// insert the new shorturl into the DB
-	_, err = db.Exec("INSERT INTO link_shortener (short_url, long_url) VALUES (?, ?)", shortUrlCode, postURL.LongURL)
+	_, err = db.Exec("INSERT INTO link_shortener (short_url, long_url, user_id) VALUES (?, ?, ?)", shortUrlCode, postURL.LongURL, postURL.UserId)
 	if err != nil {
 		log.Fatal(err)
 		http.Error(w, "Could not insert into DB table", http.StatusInternalServerError)

@@ -1,6 +1,15 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, toRefs  } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from 'pinia';
 const longUrl = ref('');
+import { useRouter } from 'vue-router';
+const router = useRouter();
+const authStore = useAuthStore();
+const { token } = storeToRefs(authStore);
+const props = defineProps({
+  userId: String
+})
 
 const shortenUrl = async () => {
   if (longUrl.value.trim() !== '') {
@@ -8,14 +17,15 @@ const shortenUrl = async () => {
       const response = await fetch(import.meta.env.VITE_API_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': token.value
         },
         body: JSON.stringify({
-          long_url: longUrl.value
+          long_url: longUrl.value,
+          user_id: props.userId
         })
       });
       const data = await response.json();
-      console.log(data['short_url']);
       
     } catch (error) {
       console.error('Error:', error);

@@ -1,0 +1,60 @@
+services:
+  auth:
+    image: auth
+    build:
+      context: ./ms
+      dockerfile: Dockerfile
+      args:
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - MICROSERVICE=auth
+    container_name: auth-ms
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-ms.rule=PathPrefix(`/proxy/v1/auth`)"
+      - "traefik.http.services.auth-ms.loadbalancer.server.port=8080"
+      - "traefik.http.routers.auth-ms.entrypoints=web"
+  
+  backend:
+    image: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    container_name: backend
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`backend.localhost`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      - "traefik.http.routers.backend.entrypoints=web"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-ms:8080
+
+  proxy:
+    image: traefik:v2.5
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--api.dashboard=true"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+

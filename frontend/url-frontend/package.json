@@ -9,7 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.29"
+    "jwt-decode": "^4.0.0",
+    "pinia": "^2.2.4",
+    "pinia-plugin-persistedstate": "^4.1.1",
+    "vue": "^3.4.29",
+    "vue-router": "^4.4.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",

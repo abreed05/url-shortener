@@ -33,3 +33,5 @@ coverage
 
 *.tsbuildinfo
 .env
+
+bin/

@@ -6,7 +6,7 @@ ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 
 WORKDIR /go/src/url-shortener
 
-COPY ./backend/url-shortener /usr/local/bin/url-shortener
+COPY ./backend/bin/url-shortener /usr/local/bin/url-shortener
 RUN chmod +x /usr/local/bin/url-shortener
 
 CMD ["/usr/local/bin/url-shortener"]

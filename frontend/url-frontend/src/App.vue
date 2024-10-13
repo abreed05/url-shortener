@@ -1,8 +1,7 @@
 <script setup>
 
 import Navbar from '@/components/Navbar.vue';
-import UrlForm from '@/components/UrlForm.vue';
-
+import { RouterView } from 'vue-router';
 // composition api 
 const openNav = () => {
     var sidebar = document.getElementById('sidebar');
@@ -25,9 +24,8 @@ const openNav = () => {
         </a>
       </nav>
   <!-- End of nav -->
-   <UrlForm />
-
-  </div>
+      <RouterView />
+    </div>
 </template>
 
 <style scoped>
